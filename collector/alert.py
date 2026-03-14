@@ -3,6 +3,7 @@ import logging
 import os
 from datetime import datetime, timezone
 
+import requests
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -14,6 +15,11 @@ BOCCO_REFRESH_TOKEN = os.getenv("BOCCO_REFRESH_TOKEN", "")
 BOCCO_ROOM_ID = os.getenv("BOCCO_ROOM_ID", "")
 ALERT_COOLDOWN_MIN = int(os.getenv("ALERT_COOLDOWN_MIN", "30"))
 ALERT_STATE_PATH = os.getenv("ALERT_STATE_PATH", "./alert_state.json")
+
+LAMETRIC_DEVICE_IP = os.getenv("LAMETRIC_DEVICE_IP", "")
+LAMETRIC_API_KEY = os.getenv("LAMETRIC_API_KEY", "")
+LAMETRIC_APP_ID = os.getenv("LAMETRIC_APP_ID", "")
+LAMETRIC_WIDGET_ID = os.getenv("LAMETRIC_WIDGET_ID", "")
 
 THRESHOLDS = {
     "eco2_1000": {
@@ -95,6 +101,30 @@ def speak_bocco(message: str) -> bool:
         return False
 
 
+def push_lametric(data: dict):
+    """Push alert data to LaMetric (optional, never raises)."""
+    if not LAMETRIC_DEVICE_IP or not LAMETRIC_API_KEY:
+        return
+
+    try:
+        icon = "a27283"  # warning red
+        frames = [
+            {"icon": icon, "text": f"CO2: {int(data['eco2'])}ppm"},
+            {"icon": "i2056", "text": f"{data['temperature']:.1f}C"},
+            {"icon": "i863", "text": f"{data['humidity']:.1f}%"},
+        ]
+        url = f"http://{LAMETRIC_DEVICE_IP}:8080/api/v2/widget/update/{LAMETRIC_APP_ID}/{LAMETRIC_WIDGET_ID}"
+        requests.post(
+            url,
+            auth=("dev", LAMETRIC_API_KEY),
+            json={"frames": frames},
+            timeout=10,
+        )
+        log.info("LaMetric alert pushed: CO2=%dppm", data["eco2"])
+    except Exception:
+        log.exception("LaMetric push failed (non-critical)")
+
+
 def check_and_alert(data: dict):
     state = load_state()
 
@@ -107,5 +137,6 @@ def check_and_alert(data: dict):
         log.info("Alert triggered: %s", key)
         if speak_bocco(threshold["message"]):
             state[key] = datetime.now(timezone.utc).isoformat()
+            push_lametric(data)
 
     save_state(state)

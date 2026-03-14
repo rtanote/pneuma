@@ -114,30 +114,22 @@ sudo systemctl status pneuma-api
 sudo journalctl -u pneuma-collector -f
 ```
 
-## 7. cron (LaMetric push)
+## 7. LaMetric (オプション)
 
-```bash
-crontab -e
+LaMetric への push はアラート連動（collector/alert.py 内）で動作する。
+`.env` に以下を設定すれば有効になる（未設定ならスキップ）:
+
+```
+LAMETRIC_DEVICE_IP=192.168.x.x
+LAMETRIC_API_KEY=your-api-key
+LAMETRIC_APP_ID=com.lametric.diy.devwidget
+LAMETRIC_WIDGET_ID=your-widget-id
 ```
 
-以下を追記（パスは環境に合わせて変更）:
-```cron
-# Pneuma LaMetric Push
-# ====================
-PNEUMA_DIR=$HOME/dev/pneuma
-PNEUMA_PYTHON=$HOME/dev/pneuma/.venv/bin/python
-PNEUMA_LOG=$HOME/dev/pneuma/logs
-
-# 5分ごと - LaMetric 表示更新
-*/5 * * * * cd $PNEUMA_DIR && $PNEUMA_PYTHON lametric/push.py >> $PNEUMA_LOG/lametric.log 2>&1
-
-# 毎月1日 - ログローテーション
-0 0 1 * * find $PNEUMA_LOG -name "*.log" -mtime +30 -delete
-```
-
-ログディレクトリ作成:
+手動テスト:
 ```bash
-mkdir -p ~/dev/pneuma/logs
+source .venv/bin/activate
+python lametric/push.py
 ```
 
 ## 8. 動作確認

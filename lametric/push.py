@@ -1,3 +1,9 @@
+"""Manual test script for LaMetric push.
+
+Production alerts are handled by collector/alert.py.
+This script is for standalone testing:
+    python lametric/push.py
+"""
 import logging
 import os
 import sys
@@ -37,8 +43,8 @@ def push_to_lametric(summary: dict):
         {"icon": "i863", "text": f"{summary['humidity']:.1f}%"},
     ]
 
-    url = f"http://{DEVICE_IP}:8080/api/v2/device/apps/{APP_ID}/widgets/{WIDGET_ID}/actions"
-    resp = requests.put(
+    url = f"http://{DEVICE_IP}:8080/api/v2/widget/update/{APP_ID}/{WIDGET_ID}"
+    resp = requests.post(
         url,
         auth=("dev", API_KEY),
         json={"frames": frames},
