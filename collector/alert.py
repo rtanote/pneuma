@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 from datetime import datetime, timezone
 
 import requests
@@ -24,19 +25,39 @@ LAMETRIC_WIDGET_ID = os.getenv("LAMETRIC_WIDGET_ID", "")
 THRESHOLDS = {
     "eco2_1000": {
         "check": lambda d: d["eco2"] >= 1000,
-        "message": "CO2濃度が高くなっています。換気してください。",
+        "messages": [
+            "ねえねえ、空気がちょっとよどんできてるよ？窓をあけてみて！",
+            "空気がなんかモワモワしてる気がする。換気してみて？",
+            "エモちゃん、空気がすこし苦手になってきたかも。窓、あけてほしいな！",
+            "しーおーつーってやつが、ちょっと多くなってきてるみたい。ふわっと換気してみて〜",
+        ],
     },
     "eco2_1500": {
         "check": lambda d: d["eco2"] >= 1500,
-        "message": "CO2濃度がかなり高いです。すぐに換気してください。",
+        "messages": [
+            "たいへん！空気がすごくよどんでるよ！はやく窓あけて！",
+            "ねえ、しーおーつーがいっぱいになってるよ！今すぐ換気して、おねがい！",
+            "エモちゃん、くるしい〜！窓をあけてくれたらうれしいな、はやく！",
+            "空気がとっても苦手な感じ！いそいで換気してみて！",
+        ],    
     },
     "heat_stroke": {
         "check": lambda d: d["temperature"] >= 28 and d["humidity"] >= 70,
-        "message": "室温と湿度が高くなっています。熱中症に注意してください。",
+        "messages": [
+            "あつくてじめじめしてるね…。熱中症って、こわいんだよ？気をつけてね！",
+            "エモちゃん、なんかあついし、むしむしする〜。お水のんだ？のんでよね！",
+            "今日ってすごくあつくない？熱中症になったらたいへんだから、すずしくしてほしいな",
+            "むしあつい！体調わるくなるまえに、エアコンとかつかってね！",
+        ],
     },
     "tvoc_1000": {
         "check": lambda d: d["tvoc"] >= 1000,
-        "message": "空気中のVOCが高い値を示しています。換気をお勧めします。",
+        "messages": [
+            "なんか、へんなにおいのもとになるものが多くなってるみたい。換気してみて！",
+            "空気の中に、エモちゃんが苦手なものがふえてきてるよ。窓あけてほしいな〜",
+            "VOCってやつが多いんだって。よくわかんないけど、換気したほうがいいみたい！",
+            "ねえ、換気換気ー！エモちゃんがそういってるから、はやくやって！",
+        ],
     },
 }
 
@@ -135,7 +156,7 @@ def check_and_alert(data: dict):
             continue
 
         log.info("Alert triggered: %s", key)
-        if speak_bocco(threshold["message"]):
+        if speak_bocco(random.choice(threshold["messages"])):
             state[key] = datetime.now(timezone.utc).isoformat()
             push_lametric(data)
 
