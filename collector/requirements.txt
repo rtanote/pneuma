@@ -1,0 +1,4 @@
+omron-2jcie-bu01
+influxdb-client
+python-dotenv
+requests

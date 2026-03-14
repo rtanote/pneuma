@@ -1,0 +1,47 @@
+# Kiro specs (private)
+.kiro/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+.venv/
+venv/
+env/
+.python-version
+
+# macOS / Xcode
+.DS_Store
+macos-widget/AirQualityWidget/build/
+*.xcuserdata/
+*.xcworkspace/xcuserstate
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Grafana (provisioned secrets)
+grafana/*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Alert state (runtime data)
+alert_state.json
+
+# Logs
+*.log

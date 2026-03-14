@@ -1,0 +1,14 @@
+name: pneuma
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - omron-2jcie-bu01
+      - influxdb-client
+      - python-dotenv
+      - fastapi
+      - uvicorn[standard]
+      - requests
