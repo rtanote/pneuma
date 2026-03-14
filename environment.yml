@@ -12,3 +12,4 @@ dependencies:
       - fastapi
       - uvicorn[standard]
       - requests
+      - emo-platform-api-sdk @ git+https://github.com/rtanote/emo-platform-api-python.git@support-pydantic-v2

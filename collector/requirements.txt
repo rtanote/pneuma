@@ -1,4 +1,4 @@
 omron-2jcie-bu01
 influxdb-client
 python-dotenv
-requests
+emo-platform-api-sdk @ git+https://github.com/rtanote/emo-platform-api-python.git@support-pydantic-v2

@@ -3,19 +3,17 @@ import logging
 import os
 from datetime import datetime, timezone
 
-import requests
 from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 log = logging.getLogger(__name__)
 
-BOCCO_API_KEY = os.getenv("BOCCO_API_KEY", "")
+BOCCO_ACCESS_TOKEN = os.getenv("BOCCO_ACCESS_TOKEN", "")
+BOCCO_REFRESH_TOKEN = os.getenv("BOCCO_REFRESH_TOKEN", "")
 BOCCO_ROOM_ID = os.getenv("BOCCO_ROOM_ID", "")
 ALERT_COOLDOWN_MIN = int(os.getenv("ALERT_COOLDOWN_MIN", "30"))
 ALERT_STATE_PATH = os.getenv("ALERT_STATE_PATH", "./alert_state.json")
-
-BOCCO_API_BASE = "https://api.bocco.me/alpha"
 
 THRESHOLDS = {
     "eco2_1000": {
@@ -35,6 +33,28 @@ THRESHOLDS = {
         "message": "空気中のVOCが高い値を示しています。換気をお勧めします。",
     },
 }
+
+_room_client = None
+
+
+def _get_room_client():
+    """Get or create a cached BOCCO emo room client."""
+    global _room_client
+    if _room_client is not None:
+        return _room_client
+
+    from emo_platform import Client, Tokens
+
+    client = Client(
+        tokens=Tokens(
+            access_token=BOCCO_ACCESS_TOKEN,
+            refresh_token=BOCCO_REFRESH_TOKEN,
+        ),
+        use_cached_credentials=True,
+    )
+    _room_client = client.create_room_client(BOCCO_ROOM_ID)
+    log.info("BOCCO emo room client created for room %s", BOCCO_ROOM_ID)
+    return _room_client
 
 
 def load_state() -> dict:
@@ -61,22 +81,13 @@ def is_cooled_down(state: dict, key: str) -> bool:
 
 
 def speak_bocco(message: str) -> bool:
-    if not BOCCO_API_KEY or not BOCCO_ROOM_ID:
+    if not BOCCO_ACCESS_TOKEN or not BOCCO_ROOM_ID:
         log.warning("BOCCO emo credentials not configured, skipping alert")
         return False
 
     try:
-        resp = requests.post(
-            f"{BOCCO_API_BASE}/rooms/{BOCCO_ROOM_ID}/messages",
-            headers={"Accept": "application/json", "Content-Type": "application/json"},
-            json={
-                "apikey": BOCCO_API_KEY,
-                "message": message,
-                "media": "text",
-            },
-            timeout=10,
-        )
-        resp.raise_for_status()
+        room_client = _get_room_client()
+        room_client.send_msg(message)
         log.info("BOCCO emo spoke: %s", message)
         return True
     except Exception:
