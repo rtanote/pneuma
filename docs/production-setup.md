@@ -11,17 +11,49 @@
 
 ## 1. USB センサードライバ
 
+OMRON 2JCIE-BU01 は FTDI 社の USB-シリアル変換チップを使用しているが、
+Linux カーネルの標準 `ftdi_sio` ドライバにはこのデバイスの Vendor/Product ID
+(0590:00d4) が登録されていない。そのため、udev ルールで自動認識させる必要がある。
+
+### udev ルール作成
+
 ```bash
-# FTDI USB ドライバ（2JCIE-BU01 用 udev ルール）
 echo 'SUBSYSTEM=="usb", ATTR{idVendor}=="0590", ATTR{idProduct}=="00d4", \
   RUN+="/sbin/modprobe ftdi_sio", \
   RUN+="/bin/sh -c \"echo 0590 00d4 > /sys/bus/usb-serial/drivers/ftdi_sio/new_id\""' \
   | sudo tee /etc/udev/rules.d/99-2jcie-bu01.rules
+```
 
+このルールは以下を行う:
+- `SUBSYSTEM=="usb"` — USB デバイスの接続を監視
+- `ATTR{idVendor}=="0590"` — OMRON の Vendor ID でフィルタ
+- `ATTR{idProduct}=="00d4"` — 2JCIE-BU01 の Product ID でフィルタ
+- `modprobe ftdi_sio` — FTDI シリアルドライバをカーネルにロード
+- `echo 0590 00d4 > .../new_id` — このデバイスを ftdi_sio ドライバに動的登録
+
+### ルール反映とパーミッション
+
+```bash
 sudo udevadm control --reload-rules
 sudo usermod -aG dialout $USER
 # 再ログインが必要
 ```
+
+- `reload-rules` で udev にルールファイルの再読み込みを指示
+- シリアルデバイス (`/dev/ttyUSBx`) は `dialout` グループに属するため、実行ユーザーをこのグループに追加する
+- グループ変更の反映にはログアウト→再ログインが必要
+
+### 確認
+
+```bash
+# センサーを USB に接続した状態で:
+lsusb | grep 0590          # OMRON デバイスが表示されること
+ls -la /dev/ttyUSB*         # /dev/ttyUSB0 等が存在すること
+```
+
+> **Note:** USB ポートの抜き差しや他の USB-シリアルデバイスの有無により、
+> デバイス番号が `/dev/ttyUSB0` ではなく `/dev/ttyUSB1` 等になる場合がある。
+> `.env` の `SENSOR_PORT` を実際のデバイスパスに合わせること。
 
 ## 2. プロジェクト配置
 
