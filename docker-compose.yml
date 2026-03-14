@@ -1,6 +1,7 @@
 services:
   influxdb:
     image: influxdb:2
+    container_name: pneuma-influxdb
     ports:
       - "8086:8086"
     volumes:
@@ -13,9 +14,11 @@ services:
       - DOCKER_INFLUXDB_INIT_ORG=home
       - DOCKER_INFLUXDB_INIT_BUCKET=air_quality
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=pneuma-dev-token
+    restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
+    container_name: pneuma-grafana
     ports:
       - "3000:3000"
     volumes:
@@ -27,6 +30,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     depends_on:
       - influxdb
+    restart: unless-stopped
 
 volumes:
   influxdb-data:

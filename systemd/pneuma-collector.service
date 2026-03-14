@@ -1,0 +1,16 @@
+[Unit]
+Description=Pneuma Air Quality Collector
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=rt
+WorkingDirectory=/home/rt/dev/pneuma
+EnvironmentFile=/home/rt/dev/pneuma/.env
+ExecStart=/home/rt/dev/pneuma/.venv/bin/python collector/collector.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
