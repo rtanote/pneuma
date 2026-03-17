@@ -45,3 +45,6 @@ alert_state.json
 
 # Logs
 *.log
+
+# Sensor manuals (PDF)
+docs/*.pdf

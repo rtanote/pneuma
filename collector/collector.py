@@ -31,6 +31,25 @@ INFLUX_BUCKET = os.getenv("INFLUX_BUCKET", "air_quality")
 
 _sensor_conn = None
 
+ERROR_LABELS = {0: "communication", 1: "out_of_range", 2: "frozen", 3: "initialization"}
+ERROR_SENSORS = ["temperature", "humidity", "light", "pressure", "noise", "tvoc", "eco2"]
+
+
+def read_error_status():
+    """Read error status register (0x5401) and return dict of sensor errors."""
+    raw = _sensor_conn.get(0x5401)
+    payload = raw[2:]  # skip address bytes
+    errors = {}
+    for i, name in enumerate(ERROR_SENSORS):
+        if i >= len(payload):
+            break
+        byte = payload[i]
+        if byte:
+            flags = [label for bit, label in ERROR_LABELS.items() if byte & (1 << bit)]
+            errors[name] = flags
+            log.warning("Sensor error: %s = %s (0x%02x)", name, flags, byte)
+    return errors
+
 
 def read_sensor_real():
     """Read data from the real OMRON 2JCIE-BU01 sensor."""
@@ -100,6 +119,16 @@ def main():
             log.exception("Sensor read failed, skipping cycle")
             time.sleep(INTERVAL_SEC)
             continue
+
+        if not MOCK_SENSOR:
+            try:
+                errors = read_error_status()
+                if "eco2" in errors:
+                    data["eco2_error"] = True
+                if "tvoc" in errors:
+                    data["tvoc_error"] = True
+            except Exception:
+                log.exception("Error status read failed")
 
         try:
             write_to_influx(client, data)

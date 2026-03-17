@@ -25,6 +25,7 @@ LAMETRIC_WIDGET_ID = os.getenv("LAMETRIC_WIDGET_ID", "")
 THRESHOLDS = {
     "eco2_1000": {
         "check": lambda d: d["eco2"] >= 1000,
+        "skip_on_error": "eco2_error",
         "messages": [
             "ねえねえ、空気がちょっとよどんできてるよ？窓をあけてみて！",
             "空気がなんかモワモワしてる気がする。換気してみて？",
@@ -34,12 +35,13 @@ THRESHOLDS = {
     },
     "eco2_1500": {
         "check": lambda d: d["eco2"] >= 1500,
+        "skip_on_error": "eco2_error",
         "messages": [
             "たいへん！空気がすごくよどんでるよ！はやく窓あけて！",
             "ねえ、しーおーつーがいっぱいになってるよ！今すぐ換気して、おねがい！",
             "エモちゃん、くるしい〜！窓をあけてくれたらうれしいな、はやく！",
             "空気がとっても苦手な感じ！いそいで換気してみて！",
-        ],    
+        ],
     },
     "heat_stroke": {
         "check": lambda d: d["temperature"] >= 28 and d["humidity"] >= 70,
@@ -52,6 +54,7 @@ THRESHOLDS = {
     },
     "tvoc_1000": {
         "check": lambda d: d["tvoc"] >= 1000,
+        "skip_on_error": "tvoc_error",
         "messages": [
             "なんか、へんなにおいのもとになるものが多くなってるみたい。換気してみて！",
             "空気の中に、エモちゃんが苦手なものがふえてきてるよ。窓あけてほしいな〜",
@@ -150,6 +153,10 @@ def check_and_alert(data: dict):
     state = load_state()
 
     for key, threshold in THRESHOLDS.items():
+        skip_key = threshold.get("skip_on_error")
+        if skip_key and data.get(skip_key):
+            log.info("Skipping alert %s due to sensor error", key)
+            continue
         if not threshold["check"](data):
             continue
         if not is_cooled_down(state, key):
