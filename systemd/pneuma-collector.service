@@ -1,7 +1,7 @@
 [Unit]
 Description=Pneuma Air Quality Collector
-After=network.target docker.service
-Requires=docker.service
+After=network.target docker.service pneuma-stack.service
+Requires=docker.service pneuma-stack.service
 
 [Service]
 Type=simple

@@ -1,0 +1,16 @@
+[Unit]
+Description=Pneuma docker compose stack (InfluxDB + Grafana)
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=rt
+WorkingDirectory=/home/rt/dev/pneuma
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStop=/usr/bin/docker compose down
+
+[Install]
+WantedBy=multi-user.target
