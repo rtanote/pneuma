@@ -24,6 +24,7 @@ LAMETRIC_WIDGET_ID = os.getenv("LAMETRIC_WIDGET_ID", "")
 
 THRESHOLDS = {
     "eco2_1000": {
+        "disabled": True,  # sensor reading unreliable; alerts omitted until replacement
         "check": lambda d: d["eco2"] >= 1000,
         "skip_on_error": "eco2_error",
         "messages": [
@@ -34,6 +35,7 @@ THRESHOLDS = {
         ],
     },
     "eco2_1500": {
+        "disabled": True,  # sensor reading unreliable; alerts omitted until replacement
         "check": lambda d: d["eco2"] >= 1500,
         "skip_on_error": "eco2_error",
         "messages": [
@@ -153,6 +155,8 @@ def check_and_alert(data: dict):
     state = load_state()
 
     for key, threshold in THRESHOLDS.items():
+        if threshold.get("disabled"):
+            continue
         skip_key = threshold.get("skip_on_error")
         if skip_key and data.get(skip_key):
             log.info("Skipping alert %s due to sensor error", key)
