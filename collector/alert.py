@@ -22,7 +22,19 @@ LAMETRIC_API_KEY = os.getenv("LAMETRIC_API_KEY", "")
 LAMETRIC_APP_ID = os.getenv("LAMETRIC_APP_ID", "")
 LAMETRIC_WIDGET_ID = os.getenv("LAMETRIC_WIDGET_ID", "")
 
+def discomfort_index(d: dict) -> float:
+    t, h = d["temperature"], d["humidity"]
+    return 0.81 * t + 0.01 * h * (0.99 * t - 14.3) + 46.3
+
+
 THRESHOLDS = {
+    "discomfort_75": {
+        "check": lambda d: discomfort_index(d) >= 75,
+        "rearm_below": lambda d: discomfort_index(d) < 73,
+        "messages": [
+            "そろそろ蒸し暑くなってきたのでエアコンつけたほうがいいかもね。",
+        ],
+    },
     "eco2_1000": {
         "disabled": True,  # sensor reading unreliable; alerts omitted until replacement
         "check": lambda d: d["eco2"] >= 1000,
@@ -161,7 +173,16 @@ def check_and_alert(data: dict):
         if skip_key and data.get(skip_key):
             log.info("Skipping alert %s due to sensor error", key)
             continue
+
+        rearm = threshold.get("rearm_below")
+        armed_key = f"{key}_armed"
+        if rearm and rearm(data) and not state.get(armed_key, True):
+            log.info("Re-arming alert %s", key)
+            state[armed_key] = True
+
         if not threshold["check"](data):
+            continue
+        if rearm and not state.get(armed_key, True):
             continue
         if not is_cooled_down(state, key):
             continue
@@ -169,6 +190,8 @@ def check_and_alert(data: dict):
         log.info("Alert triggered: %s", key)
         if speak_bocco(random.choice(threshold["messages"])):
             state[key] = datetime.now(timezone.utc).isoformat()
+            if rearm:
+                state[armed_key] = False
             push_lametric(data)
 
     save_state(state)
